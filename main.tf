@@ -26,6 +26,14 @@ resource "aws_internet_gateway" "visit" {
   }
 }
 
+resource "aws_default_route_table" "visit" {
+  default_route_table_id = aws_vpc.visit.default_route_table_id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.visit.id
+  }
+}
+
 resource "aws_security_group" "visit" {
   name   = "${var.prefix}-visit"
   vpc_id = aws_vpc.visit.id
@@ -81,8 +89,8 @@ resource "aws_iam_role" "visit_task" {
 
 resource "aws_ecs_task_definition" "visit" {
   family                   = "${var.prefix}-visit"
-  task_role_arn            = aws_iam_role.visit_execution.arn
-  execution_role_arn       = aws_iam_role.visit_task.arn
+  task_role_arn            = aws_iam_role.visit_task.arn
+  execution_role_arn       = aws_iam_role.visit_execution.arn
   cpu                      = 512
   memory                   = 1024
   network_mode             = "awsvpc"
@@ -112,6 +120,7 @@ resource "aws_ecs_service" "visit" {
     assign_public_ip = true
   }
   task_definition = aws_ecs_task_definition.visit.arn
+  depends_on      = [aws_default_route_table.visit]
 }
 
 resource "aws_cloudwatch_log_group" "submit" {
