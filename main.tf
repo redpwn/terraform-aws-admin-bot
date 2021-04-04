@@ -1,3 +1,5 @@
+data "aws_region" "region" {}
+
 resource "aws_default_vpc" "default" {}
 
 data "aws_subnet_ids" "default" {
@@ -105,6 +107,14 @@ resource "aws_ecs_task_definition" "visit" {
       name  = "APP_SQS_URL"
       value = aws_sqs_queue.queue.id
     }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.visit.name
+        awslogs-region        = data.aws_region.region.name
+        awslogs-stream-prefix = "ecs"
+      }
+    }
   }])
 }
 
@@ -125,6 +135,10 @@ resource "aws_ecs_service" "visit" {
 
 resource "aws_cloudwatch_log_group" "submit" {
   name = "/aws/lambda/${var.prefix}-submit"
+}
+
+resource "aws_cloudwatch_log_group" "visit" {
+  name = "/ecs/${var.prefix}-visit"
 }
 
 data "aws_iam_policy_document" "submit_assume" {
